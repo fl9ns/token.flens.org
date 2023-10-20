@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+            /* Configuration of your twitch app */
+            const Config = {
+                url:    `https://token.flens.org/`,         // OAuth redirect URL
+                client: `psn4d1hlngsxqjga1k5du818kukzqq`    // Client ID
+            }
+            /* End of configuration of your twitch app */
+            const flens = {
+                version: {
+                    num: `1.0`,
+                    api: { twitch: `Helix` }
+                },
+                api: {
+                    scope: {
+                        list: [
+                            `analytics:read:extensions`,
+                            `user:edit`,
+                            `user:read:email`,
+                            `clips:edit`,
+                            `bits:read`,
+                            `analytics:read:games`,
+                            `user:edit:broadcast`,
+                            `user:read:broadcast`,
+                            `chat:read`,
+                            `chat:edit`,
+                            `channel:moderate`,
+                            `channel:read:subscriptions`,
+                            `whispers:read`,
+                            `whispers:edit`,
+                            `moderation:read`,
+                            `channel:read:redemptions`,
+                            `channel:edit:commercial`,
+                            `channel:read:hype_train`,
+                            `channel:read:stream_key`,
+                            `channel:manage:extensions`,
+                            `channel:manage:broadcast`,
+                            `user:edit:follows`,
+                            `channel:manage:redemptions`,
+                            `channel:read:editors`,
+                            `channel:manage:videos`,
+                            `user:read:blocked_users`,
+                            `user:manage:blocked_users`,
+                            `user:read:subscriptions`,
+                            `user:read:follows`,
+                            `channel:manage:polls`,
+                            `channel:manage:predictions`,
+                            `channel:read:polls`,
+                            `channel:read:predictions`,
+                            `moderator:manage:automod`,
+                            `channel:manage:schedule`,
+                            `channel:read:goals`,
+                            `moderator:read:automod_settings`,
+                            `moderator:manage:automod_settings`,
+                            `moderator:manage:banned_users`,
+                            `moderator:read:blocked_terms`,
+                            `moderator:manage:blocked_terms`,
+                            `moderator:read:chat_settings`,
+                            `moderator:manage:chat_settings`,
+                            `channel:manage:raids`,
+                            `moderator:manage:announcements`,
+                            `moderator:manage:chat_messages`,
+                            `user:manage:chat_color`,
+                            `channel:manage:moderators`,
+                            `channel:read:vips`,
+                            `channel:manage:vips`,
+                            `user:manage:whispers`,
+                            `channel:read:charity`,
+                            `moderator:read:chatters`,
+                            `moderator:read:shield_mode`,
+                            `moderator:manage:shield_mode`,
+                            `moderator:read:shoutouts`,
+                            `moderator:manage:shoutouts`,
+                            `moderator:read:followers`,
+                            `channel:read:guest_star`,
+                            `channel:manage:guest_star`,
+                            `moderator:read:guest_star`,
+                            `moderator:manage:guest_star`
+                        ]
+                    },
+                    get : {
+                        user: (token) => {
+                            const req = new XMLHttpRequest()
+                            req.onreadystatechange = function() { 
+                                if(req.readyState == 4 && req.status == 200) {
+                                    try{
+                                        let user = JSON.parse(req.responseText).data[0]
+                                        document.getElementById(`profile`).src = user.profile_image_url
+                                        document.getElementById(`profile`).style.filter = `grayscale(0)`
+                                        document.getElementById(`username`).value = user.display_name
+                                        document.getElementById(`username`).disabled = false
+                                        document.getElementById(`username`).readOnly = true
+                                    } catch(e) {
+                                        console.log(`ERROR display_name request by token`)
+                                    }
+                                }
+                            }
+                            req.open(`GET`, `https://api.twitch.tv/helix/users`);
+                            req.setRequestHeader(`Authorization`, `Bearer ${token}`)
+                            req.setRequestHeader(`Client-Id`, `${Config.client}`)
+                            req.send(null)
+                        },
+                    },
+                    send : {
+                        request: (scope) => {
+                            document.location.href = `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${Config.client}&redirect_uri=${Config.url}&force_verify=true&scope=${scope}`
+                        },
+                        custom : () => {
+                            const divCustom = document.querySelector('#custom')
+                            const listScopes = divCustom.querySelectorAll('input[type="checkbox"]:checked')
+                            let scopeString = ``
+                            for(let s=0; s<listScopes.length; s++) {
+                                if(s>0){scopeString+=`+`}
+                                scopeString+=`${listScopes[s].value}`
+                            }
+                            flens.api.send.request(`${scopeString}`)
+                        }
+                    },
+                    check: {
+                        url: () => {
+                            let data = document.location.hash
+                            if(data.indexOf(`#access_token=`) > -1) {
+                                // hide token
+                                document.location.hash = ``
+                                // Token
+                                let start = data.indexOf(`#access_token=`)+14
+                                let stop = data.indexOf(`&`)
+                                let token = data.substring(start, stop)
+                                // Scope
+                                start = data.indexOf(`&scope=`)+7
+                                stop = data.indexOf(`&`, start)
+                                let scope = decodeURIComponent(data.substring(start, stop))
+                                let rowTextarea = scope.split(`+`).length
+                                if(rowTextarea > 9) {
+                                    rowTextarea = 9
+                                }
+                                // User
+                                flens.api.get.user(token)
+                                /* HTML */
+                                document.getElementById(`scopes`).innerHTML = scope.split(`+`).sort().join(`&#13;&#10;`)
+                                document.getElementById(`scopes`).rows = `${rowTextarea}`
+                                document.getElementById(`scopes`).disabled = false
+                                document.getElementById(`scopes`).readOnly = true
+
+                                document.getElementById(`token`).value = token
+                                document.getElementById(`token`).disabled = false
+                                document.getElementById(`token`).readOnly = true
+
+                                document.getElementById(`client`).disabled = false
+                                document.getElementById(`client`).readOnly = true
+                            }
+                        }
+                    }
+                },
+                checkbox: {
+                    onchange: (element) => {
+                        if(element.checked) {
+                            document.getElementById(`${element.id}-Label`).classList.remove(`unchecked`)
+                            document.getElementById(`${element.id}-Label`).classList.add(`checked`)
+                        } else {
+                            document.getElementById(`${element.id}-Label`).classList.remove(`checked`)
+                            document.getElementById(`${element.id}-Label`).classList.add(`unchecked`)
+                        }
+                    }
+                }
+            }
+        </script>
+        <meta charset="UTF-8">
+        <title>TOKEN</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap');
+            /* https://colorhunt.co */
+            :root {
+                /* base */
+                --color-body-background:#222831;
+                --color-main-background:#393E46;
+                /* global */
+                --color-text:#EEEEEE;
+                --color-title:#00ADB5;
+                /* security */
+                --color-security:#88304E;
+                --color-security-background:#311D3F;
+                /* button */
+                --color-button:var(--color-text);
+                --color-button-background:linear-gradient(-180deg,#916BBF,#3D2C8D);
+                --color-button-hover:#00ADB5;
+                --color-button-active:#0D7377;
+                /* checkbox */
+                --color-checkbox:#916BBF;
+                --color-checkbox-hover:#14FFEC;
+                --color-checkbox-checked:#14FFEC;
+                /* footer */
+                --color-footer:#916BBF;
+                --color-footer-title:#916BBF;
+            }
+            body {
+                font-family:ubuntu;
+                margin:0;
+                padding:0;
+                display:flex;
+                font-size:16px;
+                background-color:var(--color-body-background);
+            }
+            main {
+                width:999px;
+                min-width:800px;
+                margin:auto;
+                color:var(--color-text);
+                background-color:var(--color-main-background);
+            }
+            main a {
+                color:var(--color-text);
+            }
+            main h2 {
+                font-size:25px;
+                margin:100px 0px 30px 0px;
+                padding:10px 0px 0px 10px;
+                border-top:1px solid var(--color-title);
+                text-shadow:2px 2px 3px var(--color-bg-dark);
+            }
+            main h2::first-letter {
+                font-size:35px;
+                color:var(--color-title);
+            }
+            footer {
+                margin-top:100px;
+                text-align:center;
+                color:var(--color-footer);
+                padding:10px;
+                border-top:1px solid var(--color-footer-title);
+            }
+            footer a {
+                color:var(--color-footer) !important;
+            }
+            footer a:hover {
+                color:var(--color-text) !important;
+            }
+            .button {
+                margin:10px;
+                cursor:pointer;
+                font-weight:bold;
+                user-select:none;
+                padding:10px 50px;
+                border-radius:16px;
+                display:inline-block;
+                color:var(--color-button);
+                background:var(--color-button-background);
+                box-shadow:1px 1px 3px black;
+            }
+            .button:hover {
+                filter:brightness(0.85);
+                color:var(--color-button-hover);
+            }
+            .button:active {
+                filter:brightness(0.5);
+                color:var(--color-button-active);
+            }
+            #security {
+                margin:30px;
+                font-weight:bold;
+                padding:30px 50px;
+                text-align:center;
+                border-radius:10px;
+                color:var(--color-security);
+                background-color: var(--color-security-background);
+                border:1px solid var(--color-security);
+            }
+            #result {
+                display:flex;
+            }
+            #result table {
+                margin:auto;
+            }
+            #result table td {
+                padding: 10px 20px;
+            }
+            #result table textarea {
+                width:400px;
+                resize:none;
+                padding:5px;
+                border-top-right-radius:10px;
+                border-bottom-right-radius:10px;
+            }
+            #result table input {
+                width:400px;
+                padding:5px;
+                text-align:center;
+                border-top-right-radius:10px;
+                border-bottom-right-radius:10px;
+            }
+            #result .user {
+                line-height:50px;
+            }
+            #result .profile {
+                filter:grayscale(1);
+                position:absolute;
+                width:50px;
+                height:50px;
+                border-radius:50px;
+            }
+            #result .username {
+                margin-left:70px;
+                text-align:left !important;
+                width:330px !important;
+            }
+            #quick {
+                padding:10px;
+            }
+            #custom {
+                list-style-type:none;
+            }
+            #custom input[type=checkbox] {
+                width:16px;
+                height:16px;
+            }
+            #custom label {
+                margin:5px;
+                cursor:pointer;
+                user-select:none;
+            }
+            #custom .unchecked {
+                color:var(--color-checkbox);
+            }
+            #custom .unchecked:hover {
+                color:var(--color-checkbox-hover);
+            }
+            #custom .checked {
+                color:var(--color-checkbox-checked);
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <p id="security">
+                ⚠️ As a security precaution, this tool does NOT store your tokens. ⚠️<br>
+                You will need to generate new tokens if you've lost your current ones.
+            </p>
+            <h2>Your token</h2>
+            <div id="result">
+                <table>
+                    <tr>
+                        <td>User</td>
+                        <td class="user"><img id="profile" class="profile" src="favicon.ico"><input id="username" class="username" disabled></td>
+                    </tr>
+                    <tr>
+                        <td>Scope</td>
+                        <td><textarea id="scopes" rows="3" disabled></textarea></td>
+                    </tr>
+                    <tr>
+                        <td>Token</td>
+                        <td><input id="token" disabled></td>
+                    </tr>
+                    <tr>
+                        <td>Client</td>
+                        <td><input id="client" disabled></td>
+                    </tr>
+                </table>
+            </div>
+            <h2>Quick token</h2>
+            <div id="quick">
+                <a class="button" title="channel:read:polls" onClick="flens.api.send.request(`channel:read:polls`)">Poll</a>
+                <a class="button" title="channel:manage:broadcast" onClick="flens.api.send.request(`channel:manage:broadcast`)">Manage</a>
+                <a class="button" id="quick-chat" onClick="flens.api.send.request(`chat:edit+chat:read`)">Chat</a>
+                <a class="button" id="quick-all" onClick="flens.api.send.request(flens.api.scope.list.sort().join(`+`))">* ALL *</a>
+            </div>
+            <h2>Custom token</h2>
+            <ul id="custom">
+                <script>
+                    let scopes = flens.api.scope.list.sort()
+                    for(s=0; s<scopes.length; s++) {
+                        let html = `<li>`
+                            html += `<input type="checkbox" id="${scopes[s]}" value="${scopes[s]}" onChange="flens.checkbox.onchange(this)">`
+                            html += `<label id="${scopes[s]}-Label" for="${scopes[s]}" class="unchecked"> ${scopes[s]}</label>`
+                            html += `</li>`
+                        document.write(html)
+                    }
+                </script>
+                <a class="button" style="margin-top:50px;" onClick="flens.api.send.custom()">Generate</a>
+            </ul>
+            <footer>flens.org - <script>document.write(`version ${flens.version.num} - Twitch API ${flens.version.api.twitch}`)</script> - source code on <a href="https://github.com/fl9ns/token.flens.org">Github</a></footer>
+        </main>
+        <script>
+            document.getElementById(`quick-chat`).title = `chat:edit`+"\n"+`chat:red`
+            document.getElementById(`quick-all`).title = flens.api.scope.list.sort().join("\n")
+            document.getElementById(`client`).value = Config.client
+            flens.api.check.url()
+        </script>
+    </body>
+</html>
